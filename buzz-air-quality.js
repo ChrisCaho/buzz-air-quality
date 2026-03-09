@@ -1,3 +1,11 @@
+/**
+ * Buzz Air Quality Card
+ * A Home Assistant custom card for air quality monitoring with BuzzBridge
+ *
+ * Copyright (c) 2026 Chris Caho
+ * Licensed under the MIT License
+ * https://github.com/ChrisCaho/buzz-air-quality
+ */
 const BUZZ_AIR_QUALITY_VERSION = '1.0.0';
 console.log(`Buzz Air Quality Card v${BUZZ_AIR_QUALITY_VERSION}: Script loading started...`);
 
@@ -41,7 +49,7 @@ class BuzzAirQualityCard extends HTMLElement {
   static getStubConfig() {
     return {
       name: 'Air Quality',
-      aq_score_entity: 'sensor.buzzbridge_thermostat_studio_air_quality_score',
+      aq_score_entity: 'sensor.buzzbridge_thermostat_NAME_air_quality_score',
     };
   }
 

@@ -1,5 +1,7 @@
 # Buzz Air Quality Card
 
+> **v1.0.0**
+
 A Home Assistant custom card for displaying air quality and environmental data from [BuzzBridge](https://github.com/ChrisCaho/BuzzBridge) ecobee sensors.
 
 Companion card to [Ecobee Buzz Card](https://github.com/ChrisCaho/ecobee-buzz-card) — uses the same visual style for a unified dashboard experience.
@@ -13,6 +15,11 @@ Companion card to [Ecobee Buzz Card](https://github.com/ChrisCaho/ecobee-buzz-ca
 - **Auto-Refresh** — Triggers BuzzBridge Refresh Now on dashboard open
 - **Tap Actions** — Tap any sensor tile or gauge for more-info popup
 
+## Requirements
+
+- [BuzzBridge](https://github.com/ChrisCaho/BuzzBridge) custom integration installed and configured
+- An ecobee thermostat with air quality sensors (e.g., ecobee Smart Thermostat Premium)
+
 ## Installation
 
 ### HACS (Recommended)
@@ -22,7 +29,7 @@ Companion card to [Ecobee Buzz Card](https://github.com/ChrisCaho/ecobee-buzz-ca
 4. Restart Home Assistant
 
 ### Manual
-1. Download `buzz-air-quality.js`
+1. Download `buzz-air-quality.js` from the [latest release](https://github.com/ChrisCaho/buzz-air-quality/releases)
 2. Copy to `/config/www/buzz-air-quality.js`
 3. Add to Lovelace resources:
    ```yaml
@@ -33,6 +40,8 @@ Companion card to [Ecobee Buzz Card](https://github.com/ChrisCaho/ecobee-buzz-ca
 4. Restart Home Assistant
 
 ## Configuration
+
+Replace `NAME` in entity IDs below with your thermostat name as it appears in BuzzBridge (e.g., `home`, `downstairs`, etc.).
 
 ### Card Options
 
@@ -58,7 +67,7 @@ Companion card to [Ecobee Buzz Card](https://github.com/ChrisCaho/ecobee-buzz-ca
 |-------|-------|-------|
 | 80-100 | Green | Good |
 | 60-79 | Yellow | Moderate |
-| 40-59 | Orange | Sensitive |
+| 40-59 | Orange | Unhealthy for Sensitive Groups |
 | 20-39 | Red | Unhealthy |
 | 10-19 | Purple | Very Unhealthy |
 | 0-9 | Maroon | Hazardous |
@@ -67,29 +76,29 @@ Companion card to [Ecobee Buzz Card](https://github.com/ChrisCaho/ecobee-buzz-ca
 
 ```yaml
 type: custom:buzz-air-quality
-name: Studio Air Quality
-aq_score_entity: sensor.buzzbridge_thermostat_studio_air_quality_score
+name: Air Quality
+aq_score_entity: sensor.buzzbridge_thermostat_NAME_air_quality_score
 ```
 
 ### Full Configuration
 
 ```yaml
 type: custom:buzz-air-quality
-name: Studio Air Quality
-aq_score_entity: sensor.buzzbridge_thermostat_studio_air_quality_score
-co2_entity: sensor.buzzbridge_thermostat_studio_co2
-voc_entity: sensor.buzzbridge_thermostat_studio_voc
-aq_accuracy_entity: sensor.buzzbridge_thermostat_studio_air_quality_accuracy
-temperature_entity: sensor.buzzbridge_thermostat_studio_temperature
-humidity_entity: sensor.buzzbridge_thermostat_studio_humidity
-comfort_index_entity: sensor.buzzbridge_thermostat_studio_comfort_index
-differential_entity: sensor.buzzbridge_thermostat_studio_indoor_outdoor_differential
-filter_runtime_entity: sensor.buzzbridge_thermostat_studio_filter_runtime
-refresh_now_entity: button.buzzbridge_thermostat_studio_refresh_now
+name: Air Quality
+aq_score_entity: sensor.buzzbridge_thermostat_NAME_air_quality_score
+co2_entity: sensor.buzzbridge_thermostat_NAME_co2
+voc_entity: sensor.buzzbridge_thermostat_NAME_voc
+aq_accuracy_entity: sensor.buzzbridge_thermostat_NAME_air_quality_accuracy
+temperature_entity: sensor.buzzbridge_thermostat_NAME_temperature
+humidity_entity: sensor.buzzbridge_thermostat_NAME_humidity
+comfort_index_entity: sensor.buzzbridge_thermostat_NAME_comfort_index
+differential_entity: sensor.buzzbridge_thermostat_NAME_indoor_outdoor_differential
+filter_runtime_entity: sensor.buzzbridge_thermostat_NAME_filter_runtime
+refresh_now_entity: button.buzzbridge_thermostat_NAME_refresh_now
 bottom_buttons:
   - label: CO2
     icon: "\U0001FAC1"
-    entity: sensor.buzzbridge_thermostat_studio_co2
+    entity: sensor.buzzbridge_thermostat_NAME_co2
     unit: " ppm"
     thresholds:
       warning_high: 1000
@@ -98,7 +107,7 @@ bottom_buttons:
       action: more-info
   - label: VOC
     icon: "\U0001F4A8"
-    entity: sensor.buzzbridge_thermostat_studio_voc
+    entity: sensor.buzzbridge_thermostat_NAME_voc
     unit: " ppb"
     thresholds:
       warning_high: 500
@@ -107,7 +116,7 @@ bottom_buttons:
       action: more-info
   - label: AQ
     icon: "\U0001F32C"
-    entity: sensor.buzzbridge_thermostat_studio_air_quality_score
+    entity: sensor.buzzbridge_thermostat_NAME_air_quality_score
     unit: ""
     thresholds:
       warning_low: 60
@@ -116,7 +125,7 @@ bottom_buttons:
       action: more-info
   - label: HUMIDITY
     icon: "\U0001F4A7"
-    entity: sensor.buzzbridge_thermostat_studio_humidity
+    entity: sensor.buzzbridge_thermostat_NAME_humidity
     unit: "%"
     thresholds:
       warning_low: 35
@@ -150,10 +159,45 @@ thresholds:
   critical_high: 80    # Red above this value
 ```
 
+### Tap Action Options
+
+```yaml
+tap_action:
+  action: more-info          # Opens entity detail popup (default)
+
+tap_action:
+  action: toggle             # Toggles entity on/off
+
+tap_action:
+  action: call-service       # Calls a Home Assistant service
+  service: input_number.set_value
+  service_data:
+    entity_id: input_number.filter_days
+    value: 90
+
+tap_action:
+  action: navigate           # Navigate to another dashboard view
+  navigation_path: /lovelace/climate
+```
+
+## Changelog
+
+### v1.0.0 (March 2026)
+- Initial release
+- AQ Score semi-circle gauge with EPA AQI color scale
+- 6-tile sensor grid (CO2, VOC, Comfort, Temp, Humidity, Differential)
+- Filter runtime display bar
+- Configurable bottom warning buttons with threshold coloring
+- Auto-refresh BuzzBridge on dashboard open
+- Tap-to-open more-info on all tiles and gauge
+- Responsive layout (3-column, 2-column on narrow screens)
+
 ## Credits
+
+Copyright (c) 2026 Chris Caho
 
 Built with collaboration and assistance from Claude (Anthropic).
 
 ## License
 
-MIT License
+MIT License — see [LICENSE](LICENSE) for details.
