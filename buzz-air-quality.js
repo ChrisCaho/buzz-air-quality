@@ -736,6 +736,14 @@ class BuzzAirQualityCard extends HTMLElement {
     const button = this.config.bottom_buttons[index];
     if (!button) return;
 
+    // Handle history action (navigate to 72h history graph)
+    if (button.tap_action && button.tap_action.action === 'history') {
+      const start = new Date(Date.now() - 72*60*60*1000).toISOString();
+      window.history.pushState(null, '', `/history?entity_id=${button.entity}&start_date=${start}`);
+      window.dispatchEvent(new Event('location-changed', { bubbles: true, composed: true }));
+      return;
+    }
+
     if (button.tap_action && button.tap_action.action === 'more-info') {
       this.fireMoreInfo(button.entity);
       return;
