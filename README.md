@@ -192,11 +192,28 @@ tap_action:
 - Tap-to-open more-info on all tiles and gauge
 - Responsive layout (3-column, 2-column on narrow screens)
 
+## Acknowledgments
+
+This card's visual design, bottom button system, and threshold coloring are derived from
+[HA Total Climate Card](https://github.com/Mystic369/ha-total-climate-card) by **Traci S Aaron (Mystic369)**.
+Thank you to Traci for creating the original card and releasing it as open source — the
+card container styling, button patterns, and color-coded alert system in this project
+build directly on that work.
+
+The [Ecobee Buzz Card](https://github.com/ChrisCaho/ecobee-buzz-card) (also derived from
+HA Total Climate Card) serves as this card's companion for thermostat control.
+
 ## Credits
 
 Copyright (c) 2026 Chris Caho
 
-Built with collaboration and assistance from Claude (Anthropic).
+Created by **Chris Caho** with development and architecture by **Claude** (Anthropic).
+This project was built using AI-assisted development — Claude wrote the code at the
+direction and design of Chris Caho.
+
+Special thanks to the Home Assistant community and the
+[BuzzBridge](https://github.com/ChrisCaho/BuzzBridge) / [Beestat](https://beestat.io/)
+projects for making ecobee air quality data accessible.
 
 ## License
 

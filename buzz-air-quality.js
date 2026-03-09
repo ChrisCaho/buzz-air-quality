@@ -5,6 +5,12 @@
  * Copyright (c) 2026 Chris Caho
  * Licensed under the MIT License
  * https://github.com/ChrisCaho/buzz-air-quality
+ *
+ * Visual design, bottom button system, and threshold coloring derived from
+ * HA Total Climate Card (https://github.com/Mystic369/ha-total-climate-card)
+ * by Traci S Aaron (Mystic369), also licensed under MIT.
+ *
+ * Built with AI-assisted development by Claude (Anthropic).
  */
 const BUZZ_AIR_QUALITY_VERSION = '1.0.0';
 console.log(`Buzz Air Quality Card v${BUZZ_AIR_QUALITY_VERSION}: Script loading started...`);
