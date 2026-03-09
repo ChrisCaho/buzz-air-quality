@@ -12,7 +12,7 @@
  *
  * Built with AI-assisted development by Claude (Anthropic).
  */
-const BUZZ_AIR_QUALITY_VERSION = '1.0.0';
+const BUZZ_AIR_QUALITY_VERSION = '1.1.0';
 console.log(`Buzz Air Quality Card v${BUZZ_AIR_QUALITY_VERSION}: Script loading started...`);
 
 class BuzzAirQualityCard extends HTMLElement {
@@ -59,22 +59,22 @@ class BuzzAirQualityCard extends HTMLElement {
     };
   }
 
+  // AQ Score from beestat's actualAQScore is the RAW ecobee direction:
+  // higher score = worse air quality. This is NOT the inverted beestat scale.
+  // Observed data: score ~50-60 when CO2 is 500-600 ppm (good air),
+  // score ~100-110 when CO2 exceeds 1000 ppm (poor air).
   getAqiColor(score) {
-    if (score >= 80) return '#4ade80';
+    if (score >= 100) return '#ef4444';
+    if (score >= 80) return '#fb923c';
     if (score >= 60) return '#facc15';
-    if (score >= 40) return '#fb923c';
-    if (score >= 20) return '#ef4444';
-    if (score >= 10) return '#a855f7';
-    return '#991b1b';
+    return '#4ade80';
   }
 
   getAqiLabel(score) {
-    if (score >= 80) return 'Good';
+    if (score >= 100) return 'Unhealthy';
+    if (score >= 80) return 'Sensitive';
     if (score >= 60) return 'Moderate';
-    if (score >= 40) return 'Sensitive';
-    if (score >= 20) return 'Unhealthy';
-    if (score >= 10) return 'Very Unhealthy';
-    return 'Hazardous';
+    return 'Good';
   }
 
   render() {
@@ -393,6 +393,11 @@ class BuzzAirQualityCard extends HTMLElement {
           border-color: rgba(251, 191, 36, 0.4);
         }
 
+        .nav-btn.status-caution {
+          background: linear-gradient(145deg, rgba(251, 146, 60, 0.3), rgba(249, 115, 22, 0.2));
+          border-color: rgba(251, 146, 60, 0.4);
+        }
+
         .nav-btn.status-critical {
           background: linear-gradient(145deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.2));
           border-color: rgba(239, 68, 68, 0.4);
@@ -442,7 +447,7 @@ class BuzzAirQualityCard extends HTMLElement {
               </svg>
               <div class="gauge-score">
                 <div class="gauge-score-value" id="gauge-value">--</div>
-                <div class="gauge-score-max">/100</div>
+                <div class="gauge-score-max">AQ</div>
               </div>
             </div>
             <div class="gauge-status" id="gauge-status">--</div>
@@ -592,8 +597,10 @@ class BuzzAirQualityCard extends HTMLElement {
     valueEl.style.color = color;
 
     // Arc: total path length ~236px for semi-circle
+    // Visual max capped at 120 to handle raw ecobee scores exceeding 100
     const totalArc = 236;
-    const offset = totalArc - (score / 100) * totalArc;
+    const clampedScore = Math.min(score, 120);
+    const offset = totalArc - (clampedScore / 120) * totalArc;
     arcEl.style.strokeDashoffset = offset;
     arcEl.style.stroke = color;
     arcEl.style.transition = 'stroke-dashoffset 0.8s ease, stroke 0.5s ease';
@@ -699,19 +706,22 @@ class BuzzAirQualityCard extends HTMLElement {
       valueEl.textContent = displayValue;
 
       btnEl.style.background = '';
-      btnEl.classList.remove('status-on', 'status-warning', 'status-critical');
+      btnEl.classList.remove('status-on', 'status-warning', 'status-caution', 'status-critical');
 
       if (button.thresholds && !isNaN(rawValue)) {
         const numValue = parseFloat(rawValue);
-        const thresholds = button.thresholds;
+        const t = button.thresholds;
 
-        if (thresholds.critical_low !== undefined && numValue <= thresholds.critical_low) {
+        // 4-level coloring to match mini-graph color bands:
+        //   green (status-on) → yellow (status-warning) → orange (status-caution) → red (status-critical)
+        if ((t.critical_low !== undefined && numValue <= t.critical_low) ||
+            (t.critical_high !== undefined && numValue >= t.critical_high)) {
           btnEl.classList.add('status-critical');
-        } else if (thresholds.critical_high !== undefined && numValue >= thresholds.critical_high) {
-          btnEl.classList.add('status-critical');
-        } else if (thresholds.warning_low !== undefined && numValue <= thresholds.warning_low) {
-          btnEl.classList.add('status-warning');
-        } else if (thresholds.warning_high !== undefined && numValue >= thresholds.warning_high) {
+        } else if ((t.caution_low !== undefined && numValue <= t.caution_low) ||
+                   (t.caution_high !== undefined && numValue >= t.caution_high)) {
+          btnEl.classList.add('status-caution');
+        } else if ((t.warning_low !== undefined && numValue <= t.warning_low) ||
+                   (t.warning_high !== undefined && numValue >= t.warning_high)) {
           btnEl.classList.add('status-warning');
         } else {
           btnEl.classList.add('status-on');

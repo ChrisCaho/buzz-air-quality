@@ -1,0 +1,207 @@
+# Sample mini-graph-card configurations for Buzz Air Quality
+#
+# These configs use tight transition bands for distinct color changes
+# at zone boundaries. Replace NAME with your thermostat name as it
+# appears in BuzzBridge (e.g., "home", "studio", "downstairs").
+#
+# Requires: https://github.com/kalkih/mini-graph-card
+#
+# Optional: card_mod styles match the Ecobee Buzz Card gradient.
+# Requires: https://github.com/thomasloven/lovelace-card-mod
+
+# ─── Air Quality Score ───────────────────────────────────────────
+# Raw ecobee direction: lower = better air quality
+# Values can exceed 100 despite beestat documentation saying 0-100
+type: custom:mini-graph-card
+name: Air Quality Score
+hours_to_show: 24
+points_per_hour: 4
+line_width: 2
+font_size: 75
+animate: true
+min: 0
+show:
+  labels: true
+  points: false
+  legend: false
+  state: true
+  name: true
+  icon: false
+  fill: fade
+color_thresholds:
+  - value: 0
+    color: "#4ade80"    # Green: good air
+  - value: 58
+    color: "#4ade80"
+  - value: 62           # ← tight 4-unit transition band
+    color: "#facc15"    # Yellow: moderate
+  - value: 78
+    color: "#facc15"
+  - value: 82
+    color: "#fb923c"    # Orange: unhealthy for sensitive
+  - value: 98
+    color: "#fb923c"
+  - value: 102
+    color: "#ef4444"    # Red: unhealthy
+entities:
+  - entity: sensor.buzzbridge_thermostat_NAME_air_quality_score
+    name: AQ Score
+    show_state: true
+card_mod:
+  style: >
+    ha-card {
+      background: linear-gradient(165deg, #0f3049 0%, #0a1f2e 100%);
+      border: 1px solid rgba(100,180,255,0.2);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+      color: white;
+    }
+
+---
+
+# ─── CO2 (estimated) ─────────────────────────────────────────────
+# eCO2 from BME680 MOX sensor — NOT direct NDIR measurement.
+# Readings tend to run high vs reference instruments.
+type: custom:mini-graph-card
+name: CO2 (estimated)
+hours_to_show: 24
+points_per_hour: 4
+line_width: 2
+font_size: 75
+animate: true
+show:
+  labels: true
+  points: false
+  legend: false
+  state: true
+  name: true
+  icon: false
+  fill: fade
+color_thresholds:
+  - value: 0
+    color: "#4ade80"    # Green: well-ventilated
+  - value: 690
+    color: "#4ade80"
+  - value: 710          # ← tight 20-unit band at 700 ppm boundary
+    color: "#facc15"    # Yellow: EPA max recommended
+  - value: 990
+    color: "#facc15"
+  - value: 1010
+    color: "#fb923c"    # Orange: cognitive decline begins
+  - value: 1490
+    color: "#fb923c"
+  - value: 1510
+    color: "#ef4444"    # Red: seriously stuffy
+entities:
+  - entity: sensor.buzzbridge_thermostat_NAME_co2
+    name: CO2
+    show_state: true
+card_mod:
+  style: >
+    ha-card {
+      background: linear-gradient(165deg, #0f3049 0%, #0a1f2e 100%);
+      border: 1px solid rgba(100,180,255,0.2);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+      color: white;
+    }
+
+---
+
+# ─── VOC ──────────────────────────────────────────────────────────
+# Volatile Organic Compounds in parts per billion.
+# Sources: cleaning products, cooking, paint, furniture off-gassing.
+type: custom:mini-graph-card
+name: VOC
+hours_to_show: 24
+points_per_hour: 4
+line_width: 2
+font_size: 75
+animate: true
+show:
+  labels: true
+  points: false
+  legend: false
+  state: true
+  name: true
+  icon: false
+  fill: fade
+color_thresholds:
+  - value: 0
+    color: "#4ade80"    # Green: normal indoor levels
+  - value: 390
+    color: "#4ade80"
+  - value: 410          # ← tight 20-unit band at 400 ppb boundary
+    color: "#facc15"    # Yellow: slightly elevated
+  - value: 790
+    color: "#facc15"
+  - value: 810
+    color: "#fb923c"    # Orange: elevated, identify source
+  - value: 1490
+    color: "#fb923c"
+  - value: 1510
+    color: "#ef4444"    # Red: high, ventilate and investigate
+entities:
+  - entity: sensor.buzzbridge_thermostat_NAME_voc
+    name: VOC
+    show_state: true
+card_mod:
+  style: >
+    ha-card {
+      background: linear-gradient(165deg, #0f3049 0%, #0a1f2e 100%);
+      border: 1px solid rgba(100,180,255,0.2);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+      color: white;
+    }
+
+---
+
+# ─── Comfort Index ────────────────────────────────────────────────
+# BuzzBridge-calculated: 70% temperature accuracy + 30% humidity comfort.
+# Higher = better (this one IS higher = better, unlike AQ Score).
+type: custom:mini-graph-card
+name: Comfort Index
+hours_to_show: 24
+points_per_hour: 4
+line_width: 2
+font_size: 75
+animate: true
+min: 0
+max: 100
+show:
+  labels: true
+  points: false
+  legend: false
+  state: true
+  name: true
+  icon: false
+  fill: fade
+color_thresholds:
+  - value: 0
+    color: "#ef4444"    # Red: poor comfort
+  - value: 58
+    color: "#ef4444"
+  - value: 62
+    color: "#fb923c"    # Orange: uncomfortable
+  - value: 73
+    color: "#fb923c"
+  - value: 77
+    color: "#facc15"    # Yellow: acceptable
+  - value: 88
+    color: "#facc15"
+  - value: 92
+    color: "#4ade80"    # Green: excellent comfort
+entities:
+  - entity: sensor.buzzbridge_thermostat_NAME_comfort_index
+    name: Comfort
+    show_state: true
+card_mod:
+  style: >
+    ha-card {
+      background: linear-gradient(165deg, #0f3049 0%, #0a1f2e 100%);
+      border: 1px solid rgba(100,180,255,0.2);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+      color: white;
+    }

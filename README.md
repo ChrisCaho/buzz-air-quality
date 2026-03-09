@@ -1,6 +1,6 @@
 # Buzz Air Quality Card
 
-> **v1.0.0**
+> **v1.1.0**
 
 A Home Assistant custom card for displaying air quality and environmental data from [BuzzBridge](https://github.com/ChrisCaho/BuzzBridge) ecobee sensors.
 
@@ -61,16 +61,16 @@ Replace `NAME` in entity IDs below with your thermostat name as it appears in Bu
 | `refresh_now_entity` | string | No | BuzzBridge refresh now button |
 | `bottom_buttons` | list | No | Configurable warning buttons (up to 5) |
 
-### AQ Score Color Scale (EPA AQI)
+### AQ Score Color Scale
+
+The AQ score from beestat's `actualAQScore` uses the **raw ecobee direction**: higher score = worse air quality. This is the opposite of what beestat's documentation states (see [Sensor Accuracy & Limitations](#sensor-accuracy--limitations) below).
 
 | Score | Color | Label |
 |-------|-------|-------|
-| 80-100 | Green | Good |
+| 0-59 | Green | Good |
 | 60-79 | Yellow | Moderate |
-| 40-59 | Orange | Unhealthy for Sensitive Groups |
-| 20-39 | Red | Unhealthy |
-| 10-19 | Purple | Very Unhealthy |
-| 0-9 | Maroon | Hazardous |
+| 80-99 | Orange | Unhealthy for Sensitive Groups |
+| 100+ | Red | Unhealthy |
 
 ### Minimal Configuration
 
@@ -101,7 +101,8 @@ bottom_buttons:
     entity: sensor.buzzbridge_thermostat_NAME_co2
     unit: " ppm"
     thresholds:
-      warning_high: 1000
+      warning_high: 700
+      caution_high: 1000
       critical_high: 1500
     tap_action:
       action: more-info
@@ -110,8 +111,9 @@ bottom_buttons:
     entity: sensor.buzzbridge_thermostat_NAME_voc
     unit: " ppb"
     thresholds:
-      warning_high: 500
-      critical_high: 1000
+      warning_high: 400
+      caution_high: 800
+      critical_high: 1500
     tap_action:
       action: more-info
   - label: AQ
@@ -119,8 +121,9 @@ bottom_buttons:
     entity: sensor.buzzbridge_thermostat_NAME_air_quality_score
     unit: ""
     thresholds:
-      warning_low: 60
-      critical_low: 40
+      warning_high: 60
+      caution_high: 80
+      critical_high: 100
     tap_action:
       action: more-info
   - label: HUMIDITY
@@ -151,12 +154,17 @@ bottom_buttons:
 
 ### Threshold Options
 
+Bottom buttons support 4-level coloring to match the mini-graph color bands:
+**Green** (safe) → **Yellow** (warning) → **Orange** (caution) → **Red** (critical)
+
 ```yaml
 thresholds:
-  warning_low: 30      # Yellow below this value
-  warning_high: 70     # Yellow above this value
+  warning_low: 35      # Yellow below this value
+  warning_high: 700    # Yellow above this value
+  caution_low: 25      # Orange below this value (optional)
+  caution_high: 1000   # Orange above this value (optional)
   critical_low: 20     # Red below this value
-  critical_high: 80    # Red above this value
+  critical_high: 1500  # Red above this value
 ```
 
 ### Tap Action Options
@@ -180,7 +188,82 @@ tap_action:
   navigation_path: /lovelace/climate
 ```
 
+## Sensor Accuracy & Limitations
+
+### The Bosch BME680 Gas Sensor
+
+The ecobee Smart Thermostat Premium uses a **Bosch BME680** metal-oxide (MOX) gas sensor to measure indoor air quality. This sensor directly measures **total VOC gas resistance** — a single analog reading that responds to a broad mix of volatile organic compounds. From this one measurement, the ecobee firmware derives three values: a VOC reading (ppb), an estimated CO2 level (eCO2, ppm), and an overall air quality score.
+
+**CO2 is not directly measured.** The CO2 value is an *estimate* (eCO2) calculated from the VOC gas resistance using Bosch's BSEC algorithm. Because all three readings derive from the same single gas resistance measurement, they are highly correlated — when one changes, they all change together. This means the CO2 reading cannot distinguish between actual CO2 buildup (from breathing/occupancy) and other VOC sources (cooking, cleaning products, off-gassing furniture). True NDIR CO2 sensors (like the SenseAir S8) measure CO2 directly and are significantly more accurate for CO2 specifically.
+
+The BME680's MOX sensor also requires a **burn-in period** of 48-72 hours after first power-on to stabilize readings, and Bosch recommends running the BSEC algorithm continuously for the first week to establish an accurate baseline. Readings tend to run high compared to reference-grade instruments, particularly for CO2 — typical indoor eCO2 readings of 800-1000 ppm from the BME680 might correspond to 500-700 ppm on an NDIR sensor. The sensor's accuracy is best understood as indicating relative trends and threshold crossings rather than precise absolute values.
+
+### AQ Score Direction
+
+Beestat's documentation states that the `actualAQScore` is normalized to a 0-100 scale where higher = better air quality. However, **observed data shows the opposite**: the score correlates positively with CO2 and VOC levels, meaning higher score = worse air quality. Values also routinely exceed 100 (observed up to 109+), contradicting the documented 0-100 range. This card treats the score in its actual observed direction: **lower = better air, higher = worse air**.
+
+### Sources
+
+- [Bosch BME680 Datasheet](https://www.bosch-sensortec.com/products/environmental-sensors/gas-sensors/bme680/) — sensor specifications and MOX technology
+- [Bosch BSEC Algorithm](https://www.bosch-sensortec.com/software-tools/software/bme680-software-bsec/) — the firmware library that converts gas resistance to IAQ/eCO2/VOC
+- [EPA Indoor Air Quality Guide](https://www.epa.gov/indoor-air-quality-iaq) — CO2 recommendations (<1000 ppm)
+- [ASHRAE Standard 62.1](https://www.ashrae.org/technical-resources/bookstore/standards-62-1-62-2) — ventilation for acceptable indoor air quality
+- [PMC3548274](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3548274/) — cognitive performance decline at elevated CO2 levels
+- [German Federal Environment Agency (UBA)](https://www.umweltbundesamt.de/) — VOC indoor air guidelines
+
+## Mini-Graph Color Bands
+
+This card pairs well with [mini-graph-card](https://github.com/kalkih/mini-graph-card) for historical trend visualization. Below are the recommended color threshold configurations with **tight transition bands** for distinct color changes at zone boundaries.
+
+### Design Philosophy
+
+mini-graph-card interpolates colors between threshold values. Wide gaps between thresholds create gradual color blending that makes it hard to see when a value enters a new zone. These configs use **narrow 4-unit transition bands** (e.g., green at 58 → yellow at 62) so the line color snaps distinctly when crossing a zone boundary.
+
+### Threshold Zones
+
+**AQ Score** (raw ecobee direction: lower = better):
+| Range | Color | Meaning |
+|-------|-------|---------|
+| 0-59 | Green (#4ade80) | Good air quality |
+| 60-79 | Yellow (#facc15) | Moderate — consider ventilation |
+| 80-99 | Orange (#fb923c) | Unhealthy for sensitive individuals |
+| 100+ | Red (#ef4444) | Unhealthy — ventilate immediately |
+
+**CO2** (estimated, ppm):
+| Range | Color | Meaning |
+|-------|-------|---------|
+| 0-700 | Green (#4ade80) | Well-ventilated space |
+| 701-1000 | Yellow (#facc15) | EPA recommended maximum, getting stuffy |
+| 1001-1500 | Orange (#fb923c) | Cognitive performance may decline |
+| 1500+ | Red (#ef4444) | Seriously stuffy, ventilate now |
+
+**VOC** (ppb):
+| Range | Color | Meaning |
+|-------|-------|---------|
+| 0-400 | Green (#4ade80) | Normal indoor levels |
+| 401-800 | Yellow (#facc15) | Slightly elevated |
+| 801-1500 | Orange (#fb923c) | Elevated — identify source |
+| 1500+ | Red (#ef4444) | High — ventilate and investigate |
+
+**Comfort Index** (BuzzBridge calculated: 70% temperature accuracy + 30% humidity comfort, higher = better):
+| Range | Color | Meaning |
+|-------|-------|---------|
+| 90-100 | Green (#4ade80) | Excellent comfort |
+| 75-89 | Yellow (#facc15) | Acceptable |
+| 60-74 | Orange (#fb923c) | Uncomfortable |
+| 0-59 | Red (#ef4444) | Poor comfort |
+
+See [sample-mini-graph-configs.yaml](sample-mini-graph-configs.yaml) for ready-to-use card configurations.
+
 ## Changelog
+
+### v1.1.0 (March 2026)
+- **Fix**: Inverted AQ Score color scale — raw ecobee score is higher = worse, not higher = better
+- **Fix**: Gauge now handles scores above 100 (visual max capped at 120)
+- **Fix**: Gauge label changed from "/100" to "AQ"
+- Added sensor accuracy documentation with sources
+- Added mini-graph color band documentation
+- Added sample mini-graph configuration file
 
 ### v1.0.0 (March 2026)
 - Initial release
